@@ -1,79 +1,79 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TEF / TCF Practice Hub</title>
+    <title>TEF / TCF Prep Hub</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
+
 <body class="bg-gray-100 min-h-screen text-gray-800 p-4 pb-12">
     <div class="max-w-md mx-auto space-y-4">
-        
+
         <!-- App Header -->
         <header class="bg-white p-4 rounded-xl shadow-sm text-center">
             <h1 class="text-xl font-bold text-blue-600">TEF / TCF Prep Hub</h1>
-            <p class="text-xs text-gray-500 mt-1">iOS Offline Practice Engine</p>
+            <p class="text-xs text-gray-500 mt-1">Cloud Sync Edition</p>
         </header>
 
         <!-- Module & Mode Selection Controls -->
         <div class="bg-white p-4 rounded-xl shadow-sm space-y-3">
-            <!-- Module Switcher -->
             <div class="flex bg-gray-100 p-1 rounded-lg">
-                <button id="mod-ecrit" onclick="switchModule('ecrit')" class="flex-1 py-1.5 text-xs font-bold rounded-md bg-blue-600 text-white shadow-sm">
+                <button id="mod-ecrit" onclick="switchModule('ecrit')"
+                    class="flex-1 py-1.5 text-xs font-bold rounded-md bg-blue-600 text-white shadow-sm">
                     Compréhension Écrite
                 </button>
-                <button id="mod-orale" onclick="switchModule('orale')" class="flex-1 py-1.5 text-xs font-bold rounded-md text-gray-600 hover:text-gray-900">
+                <button id="mod-orale" onclick="switchModule('orale')"
+                    class="flex-1 py-1.5 text-xs font-bold rounded-md text-gray-600 hover:text-gray-900">
                     Compréhension Orale
                 </button>
             </div>
 
-            <!-- Set Selectors -->
             <div class="grid grid-cols-2 gap-2">
-                <button onclick="renderSeriesSelector()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 rounded-lg text-xs font-semibold">
+                <button onclick="renderSeriesSelector()"
+                    class="bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 rounded-lg text-xs font-semibold">
                     Series Sets (1–40)
                 </button>
-                <button onclick="loadWeakSpots()" class="bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg text-xs font-semibold">
+                <button onclick="loadWeakSpots()"
+                    class="bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg text-xs font-semibold">
                     Weak Spots Set
                 </button>
             </div>
             <button onclick="resetStats()" class="w-full text-xs text-gray-400 hover:text-red-500 underline pt-1">
-                Reset Performance History
+                Reset Cloud Performance History
             </button>
         </div>
 
         <!-- Series Grid Selector -->
         <div id="series-container" class="bg-white p-4 rounded-xl shadow-sm">
-            <h2 id="series-grid-title" class="text-sm font-semibold mb-3">Select Compréhension Écrite Series</h2>
+            <h2 id="series-grid-title" class="text-sm font-semibold mb-3">Select Series</h2>
             <div id="series-grid" class="grid grid-cols-5 gap-2"></div>
         </div>
 
         <!-- Active Question Card -->
         <div id="quiz-container" class="hidden space-y-4">
-            <!-- Progress & Badge Header -->
-            <div class="flex justify-between items-center bg-white px-4 py-2 rounded-xl shadow-sm text-xs font-semibold">
+            <div
+                class="flex justify-between items-center bg-white px-4 py-2 rounded-xl shadow-sm text-xs font-semibold">
                 <span id="progress-text" class="text-gray-500">Question 1 / 39</span>
                 <span id="score-text" class="text-blue-600">Score: 0</span>
             </div>
 
-            <!-- Single Question Container -->
             <div id="question-card" class="bg-white p-4 rounded-xl shadow-sm space-y-3">
                 <p id="q-info" class="text-xs bg-gray-50 p-2.5 rounded-lg italic text-gray-700"></p>
-                
-                <!-- Audio Player (For Compréhension Orale) -->
+
                 <div id="audio-container" class="hidden">
                     <audio id="q-audio" controls class="w-full mt-2"></audio>
                 </div>
 
                 <p id="q-text" class="font-medium text-sm text-gray-900"></p>
 
-                <!-- Options -->
                 <div id="options-container" class="space-y-2 pt-1"></div>
-
-                <!-- Instant Feedback Banner -->
                 <div id="feedback-banner" class="hidden p-3 rounded-lg text-xs font-bold text-center"></div>
 
-                <!-- Action Button -->
-                <button id="action-btn" onclick="submitAnswer()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold shadow text-sm">
+                <button id="action-btn" onclick="submitAnswer()"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold shadow text-sm">
                     Submit Answer
                 </button>
             </div>
@@ -82,301 +82,36 @@
     </div>
 
     <script>
-        // // =================================-------------------------
-        // // 1. RAW QUESTIONS DATA (PASTE YOUR FULL JSON INSIDE HERE)
-        // // =================================-------------------------
-        // const rawEcritJSON = [
-        //     // PASTE YOUR ARRAY OF QUESTIONS FROM YOUR JSON FILE HERE
-        //     // Example format:
-        //     /*
-        //     {
-        //       "number": 1,
-        //       "info": "Heures d'ouverture du service consulaire...",
-        //       "question": "Quand le service est-il fermé au public ?",
-        //       "options": { "A": "Le lundi matin", "B": "Le mardi matin", "C": "Le mercredi matin", "D": "Le jeudi matin" },
-        //       "answer": "B"
-        //     },
-        //     ...
-        //     */
-        // ];
-
-        // const rawOraleJSON = [
-        //     // PASTE LISTENING QUESTIONS HERE LATER WHEN YOU HAVE THEM
-        // ];
-
-        // // =================================-------------------------
-        // // 2. AUTOMATIC DATA CONVERSION (MAPS 39 QUESTIONS PER SERIES)
-        // // =================================-------------------------
-        // function processRawJSON(rawArray, prefix) {
-        //     return rawArray.map((q, index) => ({
-        //         id: `${prefix}_${q.number || (index + 1)}`,
-        //         series: Math.floor(index / 39) + 1, // Assigns Series 1 for 1-39, Series 2 for 40-78, etc.
-        //         info: q.info || "",
-        //         audio: q.audio || null,
-        //         question: q.question,
-        //         options: q.options,
-        //         answer: q.answer
-        //     }));
-        // }
-
-        // const database = {
-        //     ecrit: processRawJSON(rawEcritJSON, "E"),
-        //     orale: processRawJSON(rawOraleJSON, "O")
-        // };
-
-        // // =================================-------------------------
-        // // 3. STATE MANAGEMENT & LOCAL STORAGE
-        // // =================================-------------------------
-        // let currentModule = 'ecrit'; 
-        // let activeQuestions = [];
-        // let currentIndex = 0;
-        // let currentScore = 0;
-
-        // function getHistory() {
-        //     return JSON.parse(localStorage.getItem('mcq_history') || '{}');
-        // }
-
-        // function saveAttempt(questionId, isCorrect) {
-        //     const history = getHistory();
-        //     if (!history[questionId]) {
-        //         history[questionId] = { total: 0, wrong: 0 };
-        //     }
-        //     history[questionId].total += 1;
-        //     if (!isCorrect) history[questionId].wrong += 1;
-        //     localStorage.setItem('mcq_history', JSON.stringify(history));
-        // }
-
-        // // =================================-------------------------
-        // // 4. MODULE & NAVIGATION CONTROLS
-        // // =================================-------------------------
-        // function switchModule(moduleType) {
-        //     currentModule = moduleType;
-            
-        //     const btnEcrit = document.getElementById('mod-ecrit');
-        //     const btnOrale = document.getElementById('mod-orale');
-
-        //     if (moduleType === 'ecrit') {
-        //         btnEcrit.className = "flex-1 py-1.5 text-xs font-bold rounded-md bg-blue-600 text-white shadow-sm";
-        //         btnOrale.className = "flex-1 py-1.5 text-xs font-bold rounded-md text-gray-600 hover:text-gray-900";
-        //     } else {
-        //         btnOrale.className = "flex-1 py-1.5 text-xs font-bold rounded-md bg-blue-600 text-white shadow-sm";
-        //         btnEcrit.className = "flex-1 py-1.5 text-xs font-bold rounded-md text-gray-600 hover:text-gray-900";
-        //     }
-
-        //     renderSeriesSelector();
-        // }
-
-        // function renderSeriesSelector() {
-        //     document.getElementById('quiz-container').classList.add('hidden');
-        //     document.getElementById('series-container').classList.remove('hidden');
-
-        //     const title = document.getElementById('series-grid-title');
-        //     title.innerText = `Select ${currentModule === 'ecrit' ? 'Compréhension Écrite' : 'Compréhension Orale'} Series`;
-
-        //     const grid = document.getElementById('series-grid');
-        //     grid.innerHTML = '';
-
-        //     for (let i = 1; i <= 40; i++) {
-        //         const btn = document.createElement('button');
-        //         btn.className = "bg-blue-50 text-blue-600 font-bold p-3 rounded-lg text-center hover:bg-blue-600 hover:text-white border border-blue-200 transition text-sm";
-        //         btn.innerText = i;
-        //         btn.onclick = () => loadSeries(i);
-        //         grid.appendChild(btn);
-        //     }
-        // }
-
-        // function loadSeries(seriesNum) {
-        //     const moduleQuestions = database[currentModule] || [];
-        //     activeQuestions = moduleQuestions.filter(q => q.series === seriesNum);
-
-        //     if (activeQuestions.length === 0) {
-        //         alert(`No questions loaded in Series ${seriesNum} for this module yet.`);
-        //         return;
-        //     }
-
-        //     startQuiz();
-        // }
-
-        // function loadWeakSpots() {
-        //     const history = getHistory();
-        //     const moduleQuestions = database[currentModule] || [];
-            
-        //     activeQuestions = moduleQuestions.filter(q => {
-        //         const stats = history[q.id];
-        //         return stats && stats.total >= 1 && (stats.wrong / stats.total) >= 0.5;
-        //     });
-
-        //     if (activeQuestions.length === 0) {
-        //         alert("No weak spots recorded yet! Complete a few tests first.");
-        //         return;
-        //     }
-
-        //     startQuiz();
-        // }
-
-        // function startQuiz() {
-        //     currentIndex = 0;
-        //     currentScore = 0;
-        //     document.getElementById('series-container').classList.add('hidden');
-        //     document.getElementById('quiz-container').classList.remove('hidden');
-        //     renderCurrentQuestion();
-        // }
-
-        // // =================================-------------------------
-        // // 5. QUESTION RENDERING & INSTANT FEEDBACK
-        // // =================================-------------------------
-        // function renderCurrentQuestion() {
-        //     const q = activeQuestions[currentIndex];
-
-        //     document.getElementById('progress-text').innerText = `Question ${currentIndex + 1} / ${activeQuestions.length}`;
-        //     document.getElementById('score-text').innerText = `Score: ${currentScore}`;
-
-        //     const infoElem = document.getElementById('q-info');
-        //     if (q.info) {
-        //         infoElem.innerText = q.info;
-        //         infoElem.classList.remove('hidden');
-        //     } else {
-        //         infoElem.classList.add('hidden');
-        //     }
-
-        //     const audioContainer = document.getElementById('audio-container');
-        //     const audioElem = document.getElementById('q-audio');
-        //     if (q.audio) {
-        //         audioElem.src = q.audio;
-        //         audioContainer.classList.remove('hidden');
-        //     } else {
-        //         audioContainer.classList.add('hidden');
-        //     }
-
-        //     document.getElementById('q-text').innerText = q.question;
-
-        //     const optionsContainer = document.getElementById('options-container');
-        //     optionsContainer.innerHTML = '';
-
-        //     ['A', 'B', 'C', 'D'].forEach(optKey => {
-        //         if (q.options && q.options[optKey]) {
-        //             const label = document.createElement('label');
-        //             label.id = `opt-label-${optKey}`;
-        //             label.className = "flex items-center space-x-3 text-xs p-3 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 cursor-pointer transition";
-        //             label.innerHTML = `
-        //                 <input type="radio" name="option" value="${optKey}" class="text-blue-600 focus:ring-0">
-        //                 <span id="opt-text-${optKey}"><b>${optKey}:</b> ${q.options[optKey]}</span>
-        //             `;
-        //             optionsContainer.appendChild(label);
-        //         }
-        //     });
-
-        //     const feedback = document.getElementById('feedback-banner');
-        //     feedback.className = "hidden p-3 rounded-lg text-xs font-bold text-center";
-            
-        //     const btn = document.getElementById('action-btn');
-        //     btn.innerText = "Submit Answer";
-        //     btn.onclick = submitAnswer;
-        // }
-
-        // function submitAnswer() {
-        //     const selectedOpt = document.querySelector('input[name="option"]:checked');
-        //     if (!selectedOpt) {
-        //         alert("Please select an answer first!");
-        //         return;
-        //     }
-
-        //     const q = activeQuestions[currentIndex];
-        //     const userAns = selectedOpt.value;
-        //     const isCorrect = (userAns === q.answer);
-
-        //     saveAttempt(q.id, isCorrect);
-
-        //     ['A', 'B', 'C', 'D'].forEach(key => {
-        //         const label = document.getElementById(`opt-label-${key}`);
-        //         if (!label) return;
-                
-        //         const radio = label.querySelector('input');
-        //         radio.disabled = true;
-
-        //         if (key === q.answer) {
-        //             label.className = "flex items-center space-x-3 text-xs p-3 rounded-lg border-2 border-green-500 bg-green-50 text-green-900 font-semibold";
-        //         } else if (key === userAns && !isCorrect) {
-        //             label.className = "flex items-center space-x-3 text-xs p-3 rounded-lg border-2 border-red-500 bg-red-50 text-red-900 font-semibold";
-        //         }
-        //     });
-
-        //     const feedback = document.getElementById('feedback-banner');
-        //     feedback.classList.remove('hidden');
-        //     if (isCorrect) {
-        //         currentScore++;
-        //         feedback.className = "p-3 rounded-lg text-xs font-bold text-center bg-green-100 text-green-800 border border-green-300";
-        //         feedback.innerText = "Correct answer! Bravo!";
-        //     } else {
-        //         feedback.className = "p-3 rounded-lg text-xs font-bold text-center bg-red-100 text-red-800 border border-red-300";
-        //         feedback.innerText = `Incorrect. The correct answer is Option ${q.answer}.`;
-        //     }
-
-        //     document.getElementById('score-text').innerText = `Score: ${currentScore}`;
-
-        //     const btn = document.getElementById('action-btn');
-        //     if (currentIndex < activeQuestions.length - 1) {
-        //         btn.innerText = "Next Question →";
-        //         btn.onclick = goToNextQuestion;
-        //     } else {
-        //         btn.innerText = "Finish Practice Set";
-        //         btn.onclick = finishSet;
-        //     }
-        // }
-
-        // function goToNextQuestion() {
-        //     currentIndex++;
-        //     renderCurrentQuestion();
-        // }
-
-        // function finishSet() {
-        //     alert(`Practice Set Finished!\nYour Final Score: ${currentScore} / ${activeQuestions.length}`);
-        //     renderSeriesSelector();
-        // }
-
-        // function resetStats() {
-        //     if (confirm("Are you sure you want to reset all performance history?")) {
-        //         localStorage.removeItem('mcq_history');
-        //         alert("Performance history reset.");
-        //     }
-        // }
-
-        // renderSeriesSelector();
         // =================================-------------------------
-        // 1. STATE MANAGEMENT & DATA STORAGE
+        // 1. SUPABASE CLOUD CONFIGURATION
         // =================================-------------------------
-        let database = {
-            ecrit: [],
-            orale: []
-        };
+        const SUPABASE_URL = "https://cheyvjepgywypvzzkoio.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_EgZFYyBbZSKJoFR2K02FYg_7nzSub4v";
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let currentModule = 'ecrit'; // 'ecrit' or 'orale'
+        let database = { ecrit: [], orale: [] };
+        let currentModule = 'ecrit';
         let activeQuestions = [];
         let currentIndex = 0;
         let currentScore = 0;
 
-        // Paths to your JSON files (Must be in the same folder as quiz.html)
         const JSON_PATHS = {
             ecrit: './questions.json',
-            orale: './listening.json' // You can add your listening JSON here later
+            orale: './listening.json'
         };
 
         // =================================-------------------------
-        // 2. FETCH JSON FILE FROM PATH
+        // 2. FETCH JSON & MAP QUESTIONS (39 PER SERIES)
         // =================================-------------------------
         async function loadJSONData(moduleType) {
             const filePath = JSON_PATHS[moduleType];
             try {
                 const response = await fetch(filePath);
-                if (!response.ok) {
-                    throw new Error(`Could not find or open ${filePath}`);
-                }
+                if (!response.ok) throw new Error(`Could not load ${filePath}`);
+
                 const data = await response.json();
-                
-                // Handle both { "questions": [...] } and direct array [...] formats
                 const rawArray = data.questions || data;
 
-                // Process questions and group 39 per series
                 database[moduleType] = rawArray.map((q, index) => ({
                     id: `${moduleType.charAt(0).toUpperCase()}_${q.number || (index + 1)}`,
                     series: Math.floor(index / 39) + 1,
@@ -392,34 +127,71 @@
                 console.error("Error loading JSON:", error);
                 document.getElementById('series-grid').innerHTML = `
                     <div class="col-span-5 text-red-500 text-xs text-center p-4">
-                        <b>Error loading file:</b><br>${error.message}<br><br>
-                        Make sure <code>questions.json</code> is saved in the exact same folder as <code>quiz.html</code>.
+                        <b>File Load Error:</b><br>${error.message}
                     </div>
                 `;
             }
         }
 
-        // LocalStorage Performance Tracker
-        function getHistory() {
-            return JSON.parse(localStorage.getItem('mcq_history') || '{}');
+        // =================================-------------------------
+        // 3. CLOUD SYNC FUNCTIONS (SUPABASE)
+        // =================================-------------------------
+        async function saveAttemptToCloud(questionId, isCorrect) {
+            await _supabase.from('attempts').insert([{
+                question_id: questionId,
+                module: currentModule,
+                is_correct: isCorrect
+            }]);
         }
 
-        function saveAttempt(questionId, isCorrect) {
-            const history = getHistory();
-            if (!history[questionId]) {
-                history[questionId] = { total: 0, wrong: 0 };
+        async function loadWeakSpots() {
+            // Pull attempt records from cloud
+            const { data: attempts, error } = await _supabase
+                .from('attempts')
+                .select('question_id, is_correct')
+                .eq('module', currentModule);
+
+            if (error || !attempts || attempts.length === 0) {
+                alert("No performance history found in the cloud yet! Practice a series first.");
+                return;
             }
-            history[questionId].total += 1;
-            if (!isCorrect) history[questionId].wrong += 1;
-            localStorage.setItem('mcq_history', JSON.stringify(history));
+
+            // Aggregate attempts per question
+            const stats = {};
+            attempts.forEach(a => {
+                if (!stats[a.question_id]) stats[a.question_id] = { total: 0, wrong: 0 };
+                stats[a.question_id].total += 1;
+                if (!a.is_correct) stats[a.question_id].wrong += 1;
+            });
+
+            // Filter questions with >= 50% error rate
+            const moduleQuestions = database[currentModule] || [];
+            activeQuestions = moduleQuestions.filter(q => {
+                const s = stats[q.id];
+                return s && s.total >= 1 && (s.wrong / s.total) >= 0.5;
+            });
+
+            if (activeQuestions.length === 0) {
+                alert("No weak spots identified! Great job so far.");
+                return;
+            }
+
+            startQuiz();
+        }
+
+        async function resetStats() {
+            if (confirm("Are you sure you want to clear your entire cloud performance history?")) {
+                await _supabase.from('attempts').delete().eq('module', currentModule);
+                alert("Cloud history reset!");
+            }
         }
 
         // =================================-------------------------
-        // 3. MODULE & NAVIGATION CONTROLS
+        // 4. NAVIGATION & RENDERING CONTROLS
         // =================================-------------------------
         function switchModule(moduleType) {
             currentModule = moduleType;
-            
+
             const btnEcrit = document.getElementById('mod-ecrit');
             const btnOrale = document.getElementById('mod-orale');
 
@@ -462,24 +234,7 @@
             activeQuestions = moduleQuestions.filter(q => q.series === seriesNum);
 
             if (activeQuestions.length === 0) {
-                alert(`No questions found in Series ${seriesNum} in ${JSON_PATHS[currentModule]}.`);
-                return;
-            }
-
-            startQuiz();
-        }
-
-        function loadWeakSpots() {
-            const history = getHistory();
-            const moduleQuestions = database[currentModule] || [];
-            
-            activeQuestions = moduleQuestions.filter(q => {
-                const stats = history[q.id];
-                return stats && stats.total >= 1 && (stats.wrong / stats.total) >= 0.5;
-            });
-
-            if (activeQuestions.length === 0) {
-                alert("No weak spots recorded yet! Practice a few series first.");
+                alert(`No questions found in Series ${seriesNum} for this module.`);
                 return;
             }
 
@@ -494,9 +249,6 @@
             renderCurrentQuestion();
         }
 
-        // =================================-------------------------
-        // 4. QUESTION RENDERING & INSTANT FEEDBACK
-        // =================================-------------------------
         function renderCurrentQuestion() {
             const q = activeQuestions[currentIndex];
 
@@ -540,13 +292,13 @@
 
             const feedback = document.getElementById('feedback-banner');
             feedback.className = "hidden p-3 rounded-lg text-xs font-bold text-center";
-            
+
             const btn = document.getElementById('action-btn');
             btn.innerText = "Submit Answer";
             btn.onclick = submitAnswer;
         }
 
-        function submitAnswer() {
+        async function submitAnswer() {
             const selectedOpt = document.querySelector('input[name="option"]:checked');
             if (!selectedOpt) {
                 alert("Please select an answer first!");
@@ -557,12 +309,13 @@
             const userAns = selectedOpt.value;
             const isCorrect = (userAns === q.answer);
 
-            saveAttempt(q.id, isCorrect);
+            // Cloud Save
+            saveAttemptToCloud(q.id, isCorrect);
 
             ['A', 'B', 'C', 'D'].forEach(key => {
                 const label = document.getElementById(`opt-label-${key}`);
                 if (!label) return;
-                
+
                 const radio = label.querySelector('input');
                 radio.disabled = true;
 
@@ -606,15 +359,9 @@
             renderSeriesSelector();
         }
 
-        function resetStats() {
-            if (confirm("Are you sure you want to reset all performance history?")) {
-                localStorage.removeItem('mcq_history');
-                alert("Performance history reset.");
-            }
-        }
-
-        // Initialize App by loading questions.json
+        // Initialize App
         loadJSONData('ecrit');
     </script>
 </body>
+
 </html>
