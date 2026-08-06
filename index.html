@@ -15,7 +15,7 @@
         <!-- App Header -->
         <header class="bg-white p-4 rounded-xl shadow-sm text-center">
             <h1 class="text-xl font-bold text-blue-600">TEF / TCF Prep Hub</h1>
-            <p class="text-xs text-gray-500 mt-1">Cloud Sync Edition</p>
+            <p class="text-xs text-gray-500 mt-1">Weighted TEF Scoring & Cloud Sync</p>
         </header>
 
         <!-- Module & Mode Selection Controls -->
@@ -57,7 +57,7 @@
             <div
                 class="flex justify-between items-center bg-white px-4 py-2 rounded-xl shadow-sm text-xs font-semibold">
                 <span id="progress-text" class="text-gray-500">Question 1 / 39</span>
-                <span id="score-text" class="text-blue-600">Score: 0</span>
+                <span id="score-text" class="text-blue-600">Points: 0 / 0</span>
             </div>
 
             <div id="question-card" class="bg-white p-4 rounded-xl shadow-sm space-y-3">
@@ -67,23 +67,52 @@
                     <audio id="q-audio" controls class="w-full mt-2"></audio>
                 </div>
 
-                <p id="q-text" class="font-medium text-sm text-gray-900"></p>
+                <div class="flex justify-between items-start">
+                    <p id="q-text" class="font-medium text-sm text-gray-900"></p>
+                    <span id="q-points-badge"
+                        class="ml-2 bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0"></span>
+                </div>
 
                 <div id="options-container" class="space-y-2 pt-1"></div>
-                <div id="feedback-banner" class="hidden p-3 rounded-lg text-xs font-bold text-center"></div>
 
+                <!-- Action Button -->
                 <button id="action-btn" onclick="submitAnswer()"
                     class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold shadow text-sm">
                     Submit Answer
                 </button>
+
+                <!-- Feedback Banner MOVED HERE (Under the Submit Button) -->
+                <div id="feedback-banner" class="hidden p-3 rounded-lg text-xs font-bold text-center"></div>
             </div>
+
+            <!--             
+            <div id="question-card" class="bg-white p-4 rounded-xl shadow-sm space-y-3">
+                <p id="q-info" class="text-xs bg-gray-50 p-2.5 rounded-lg italic text-gray-700"></p>
+                
+                <div id="audio-container" class="hidden">
+                    <audio id="q-audio" controls class="w-full mt-2"></audio>
+                </div>
+
+                <div class="flex justify-between items-start">
+                    <p id="q-text" class="font-medium text-sm text-gray-900"></p>
+                    <span id="q-points-badge" class="ml-2 bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0"></span>
+                </div>
+
+                <div id="options-container" class="space-y-2 pt-1"></div>
+                <div id="feedback-banner" class="hidden p-3 rounded-lg text-xs font-bold text-center"></div>
+
+                <button id="action-btn" onclick="submitAnswer()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold shadow text-sm">
+                    Submit Answer
+                </button>
+            </div> -->
+
         </div>
 
     </div>
 
     <script>
         // =================================-------------------------
-        // 1. SUPABASE CLOUD CONFIGURATION
+        // 1. SUPABASE CONFIGURATION
         // =================================-------------------------
         const SUPABASE_URL = "https://cheyvjepgywypvzzkoio.supabase.co";
         const SUPABASE_KEY = "sb_publishable_EgZFYyBbZSKJoFR2K02FYg_7nzSub4v";
@@ -93,12 +122,26 @@
         let currentModule = 'ecrit';
         let activeQuestions = [];
         let currentIndex = 0;
-        let currentScore = 0;
+        let currentEarnedPoints = 0;
+        let currentTotalPossiblePoints = 0;
+        let currentRawCorrect = 0;
 
         const JSON_PATHS = {
             ecrit: './questions.json',
             orale: './listening.json'
         };
+
+        // TEF/TCF Points Breakdown Helper
+        function getQuestionPoints(qNumber) {
+            const num = parseInt(qNumber, 10);
+            if (num >= 1 && num <= 4) return 3;
+            if (num >= 5 && num <= 10) return 9;
+            if (num >= 11 && num <= 19) return 15;
+            if (num >= 20 && num <= 29) return 21;
+            if (num >= 30 && num <= 35) return 26;
+            if (num >= 36 && num <= 39) return 33;
+            return 15; // Default fallback point
+        }
 
         // =================================-------------------------
         // 2. FETCH JSON & MAP QUESTIONS (39 PER SERIES)
@@ -112,16 +155,23 @@
                 const data = await response.json();
                 const rawArray = data.questions || data;
 
-                database[moduleType] = rawArray.map((q, index) => ({
-                    id: `${moduleType.charAt(0).toUpperCase()}_${q.number || (index + 1)}`,
-                    series: Math.floor(index / 39) + 1,
-                    info: q.info || "",
-                    audio: q.audio || null,
-                    question: q.question,
-                    options: q.options,
-                    answer: q.answer
-                }));
+                database[moduleType] = rawArray.map((q, index) => {
+                    const seriesIndex = Math.floor(index / 39) + 1;
+                    const posInSeries = (index % 39) + 1;
+                    return {
+                        id: `${moduleType.charAt(0).toUpperCase()}_${q.number || (index + 1)}`,
+                        series: seriesIndex,
+                        posInSeries: posInSeries,
+                        points: getQuestionPoints(posInSeries),
+                        info: q.info || "",
+                        audio: q.audio || null,
+                        question: q.question,
+                        options: q.options,
+                        answer: q.answer
+                    };
+                });
 
+                console.log(`Loaded ${database[moduleType].length} questions for ${moduleType}.`);
                 renderSeriesSelector();
             } catch (error) {
                 console.error("Error loading JSON:", error);
@@ -137,22 +187,38 @@
         // 3. CLOUD SYNC FUNCTIONS (SUPABASE)
         // =================================-------------------------
         async function saveAttemptToCloud(questionId, isCorrect) {
-            await _supabase.from('attempts').insert([{
+            console.log(`Saving attempt -> ID: ${questionId}, Module: ${currentModule}, Correct: ${isCorrect}`);
+            const { data, error } = await _supabase.from('attempts').insert([{
                 question_id: questionId,
                 module: currentModule,
                 is_correct: isCorrect
             }]);
+
+            if (error) {
+                console.error("Supabase Save Error:", error);
+            } else {
+                console.log("Supabase Save Success:", data);
+            }
         }
 
         async function loadWeakSpots() {
-            // Pull attempt records from cloud
+            console.log(`Fetching weak spots for module: ${currentModule}`);
+
             const { data: attempts, error } = await _supabase
                 .from('attempts')
                 .select('question_id, is_correct')
                 .eq('module', currentModule);
 
-            if (error || !attempts || attempts.length === 0) {
-                alert("No performance history found in the cloud yet! Practice a series first.");
+            if (error) {
+                console.error("Supabase Query Error:", error);
+                alert("Error fetching data from Supabase. Check browser console.");
+                return;
+            }
+
+            console.log("Raw cloud attempts received:", attempts);
+
+            if (!attempts || attempts.length === 0) {
+                alert("No performance history found in Supabase! Answer some questions first.");
                 return;
             }
 
@@ -164,6 +230,8 @@
                 if (!a.is_correct) stats[a.question_id].wrong += 1;
             });
 
+            console.log("Aggregated Stats:", stats);
+
             // Filter questions with >= 50% error rate
             const moduleQuestions = database[currentModule] || [];
             activeQuestions = moduleQuestions.filter(q => {
@@ -171,8 +239,10 @@
                 return s && s.total >= 1 && (s.wrong / s.total) >= 0.5;
             });
 
+            console.log("Matched Weak Spot Questions:", activeQuestions);
+
             if (activeQuestions.length === 0) {
-                alert("No weak spots identified! Great job so far.");
+                alert("No weak spots identified! All answered questions have >50% accuracy.");
                 return;
             }
 
@@ -181,8 +251,13 @@
 
         async function resetStats() {
             if (confirm("Are you sure you want to clear your entire cloud performance history?")) {
-                await _supabase.from('attempts').delete().eq('module', currentModule);
-                alert("Cloud history reset!");
+                const { error } = await _supabase.from('attempts').delete().eq('module', currentModule);
+                if (error) {
+                    console.error("Reset Error:", error);
+                    alert("Could not reset stats: " + error.message);
+                } else {
+                    alert("Cloud history reset!");
+                }
             }
         }
 
@@ -243,7 +318,12 @@
 
         function startQuiz() {
             currentIndex = 0;
-            currentScore = 0;
+            currentEarnedPoints = 0;
+            currentRawCorrect = 0;
+
+            // Calculate total possible weighted points for active set
+            currentTotalPossiblePoints = activeQuestions.reduce((sum, q) => sum + q.points, 0);
+
             document.getElementById('series-container').classList.add('hidden');
             document.getElementById('quiz-container').classList.remove('hidden');
             renderCurrentQuestion();
@@ -253,7 +333,7 @@
             const q = activeQuestions[currentIndex];
 
             document.getElementById('progress-text').innerText = `Question ${currentIndex + 1} / ${activeQuestions.length}`;
-            document.getElementById('score-text').innerText = `Score: ${currentScore}`;
+            document.getElementById('score-text').innerText = `Points: ${currentEarnedPoints} / ${currentTotalPossiblePoints} pts`;
 
             const infoElem = document.getElementById('q-info');
             if (q.info) {
@@ -273,6 +353,7 @@
             }
 
             document.getElementById('q-text').innerText = q.question;
+            document.getElementById('q-points-badge').innerText = `+${q.points} pt`;
 
             const optionsContainer = document.getElementById('options-container');
             optionsContainer.innerHTML = '';
@@ -309,7 +390,7 @@
             const userAns = selectedOpt.value;
             const isCorrect = (userAns === q.answer);
 
-            // Cloud Save
+            // Save Attempt to Supabase
             saveAttemptToCloud(q.id, isCorrect);
 
             ['A', 'B', 'C', 'D'].forEach(key => {
@@ -329,15 +410,16 @@
             const feedback = document.getElementById('feedback-banner');
             feedback.classList.remove('hidden');
             if (isCorrect) {
-                currentScore++;
+                currentEarnedPoints += q.points;
+                currentRawCorrect++;
                 feedback.className = "p-3 rounded-lg text-xs font-bold text-center bg-green-100 text-green-800 border border-green-300";
-                feedback.innerText = "Correct answer! Bravo!";
+                feedback.innerText = `Correct! (+${q.points} pts)`;
             } else {
                 feedback.className = "p-3 rounded-lg text-xs font-bold text-center bg-red-100 text-red-800 border border-red-300";
-                feedback.innerText = `Incorrect. The correct answer is Option ${q.answer}.`;
+                feedback.innerText = `Incorrect. Correct answer is ${q.answer} (+0 pts).`;
             }
 
-            document.getElementById('score-text').innerText = `Score: ${currentScore}`;
+            document.getElementById('score-text').innerText = `Points: ${currentEarnedPoints} / ${currentTotalPossiblePoints} pts`;
 
             const btn = document.getElementById('action-btn');
             if (currentIndex < activeQuestions.length - 1) {
@@ -355,7 +437,7 @@
         }
 
         function finishSet() {
-            alert(`Practice Set Finished!\nYour Final Score: ${currentScore} / ${activeQuestions.length}`);
+            alert(`Practice Set Finished!\nWeighted Score: ${currentEarnedPoints} / ${currentTotalPossiblePoints} pts\nRaw Score: ${currentRawCorrect} / ${activeQuestions.length}`);
             renderSeriesSelector();
         }
 
