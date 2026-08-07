@@ -332,10 +332,23 @@
             console.log("Aggregated Stats:", stats);
 
             // Filter questions with >= 50% error rate
+            // Filter questions with >= 50% error rate
             const moduleQuestions = database[currentModule] || [];
-            activeQuestions = moduleQuestions.filter(q => {
+            const rawWeakSpots = moduleQuestions.filter(q => {
                 const s = stats[q.id];
                 return s && s.total >= 1 && (s.wrong / s.total) >= 0.5;
+            });
+
+            // Deduplicate weak spot questions based on unique question text
+            const seenTexts = new Set();
+            activeQuestions = rawWeakSpots.filter(q => {
+                // Normalize question text to catch exact text duplicates across series
+                const cleanText = q.question.trim().toLowerCase();
+                if (seenTexts.has(cleanText)) {
+                    return false; // Skip if we've already added this exact question text
+                }
+                seenTexts.add(cleanText);
+                return true;
             });
 
             console.log("Matched Weak Spot Questions:", activeQuestions);
