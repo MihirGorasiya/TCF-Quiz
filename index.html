@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TEF / TCF Prep Hub</title>
+    <title>TCF Prep Hub</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -13,10 +13,10 @@
     <div class="max-w-md mx-auto space-y-4">
 
         <!-- App Header -->
-        <header class="bg-white p-4 rounded-xl shadow-sm text-center">
+        <!-- <header class="bg-white p-4 rounded-xl shadow-sm text-center">
             <h1 class="text-xl font-bold text-blue-600">TEF / TCF Prep Hub</h1>
             <p class="text-xs text-gray-500 mt-1">Weighted TEF Scoring & Cloud Sync</p>
-        </header>
+        </header> -->
 
         <!-- Module & Mode Selection Controls -->
         <div class="bg-white p-4 rounded-xl shadow-sm space-y-3">
@@ -47,9 +47,29 @@
         </div>
 
         <!-- Series Grid Selector -->
-        <div id="series-container" class="bg-white p-4 rounded-xl shadow-sm">
+        <!-- <div id="series-container" class="bg-white p-4 rounded-xl shadow-sm">
             <h2 id="series-grid-title" class="text-sm font-semibold mb-3">Select Series</h2>
             <div id="series-grid" class="grid grid-cols-5 gap-2"></div>
+        </div> -->
+        <!-- Series Grid Selector & History Dashboard Container -->
+        <div id="series-container" class="bg-white p-4 rounded-xl shadow-sm space-y-6">
+            <!-- Top: Series Grid -->
+            <div>
+                <h2 id="series-grid-title" class="text-sm font-semibold mb-3">Select Series</h2>
+                <div id="series-grid" class="grid grid-cols-5 gap-2"></div>
+            </div>
+
+            <!-- Bottom: Test History Section -->
+            <div class="border-t pt-4 border-gray-100">
+                <h2 class="text-sm font-semibold mb-3 text-gray-800 flex justify-between items-center">
+                    <span>Test History</span>
+                    <span id="history-module-badge"
+                        class="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full font-bold">Écrite</span>
+                </h2>
+                <div id="history-list" class="space-y-2 max-h-80 overflow-y-auto pr-1 text-xs">
+                    <p class="text-gray-400 italic text-center py-4">Loading history...</p>
+                </div>
+            </div>
         </div>
 
         <!-- Active Question Card -->
@@ -142,7 +162,86 @@
             if (num >= 36 && num <= 39) return 33;
             return 15; // Default fallback point
         }
+        // =================================-------------------------
+        // NCLC / CLB MAPPING LOGIC (Based on Official Benchmark Grid)
+        // =================================-------------------------
+        function getCLBLevel(score, moduleType) {
+            const isReading = (moduleType === 'ecrit');
 
+            if (isReading) {
+                if (score >= 549) return { clb: 10, cefr: "C1-C2" };
+                if (score >= 524) return { clb: 9, cefr: "C1" };
+                if (score >= 499) return { clb: 8, cefr: "B2" };
+                if (score >= 453) return { clb: 7, cefr: "B2" };
+                if (score >= 406) return { clb: 6, cefr: "B1" };
+                if (score >= 375) return { clb: 5, cefr: "B1" };
+                if (score >= 342) return { clb: 4, cefr: "A2" };
+                return { clb: "<4", cefr: "A1-A2" };
+            } else { // Listening
+                if (score >= 549) return { clb: 10, cefr: "C1-C2" };
+                if (score >= 523) return { clb: 9, cefr: "C1" };
+                if (score >= 503) return { clb: 8, cefr: "B2" };
+                if (score >= 458) return { clb: 7, cefr: "B2" };
+                if (score >= 398) return { clb: 6, cefr: "B1" };
+                if (score >= 369) return { clb: 5, cefr: "B1" };
+                if (score >= 331) return { clb: 4, cefr: "A2" };
+                return { clb: "<4", cefr: "A1-A2" };
+            }
+        }
+
+        // Save Completed Test Result to Supabase
+        async function saveTestResult(seriesNum, score) {
+            const { clb, cefr } = getCLBLevel(score, currentModule);
+
+            await _supabase.from('test_results').insert([{
+                module: currentModule,
+                series_number: seriesNum,
+                score: score,
+                clb_level: typeof clb === 'number' ? clb : 0,
+                cefr_level: cefr
+            }]);
+
+            loadTestHistory(); // Refresh Sidebar
+        }
+
+        // Fetch & Render Test History List
+        async function loadTestHistory() {
+            const historyList = document.getElementById('history-list');
+            document.getElementById('history-module-badge').innerText = currentModule === 'ecrit' ? 'Écrite' : 'Orale';
+
+            const { data: results, error } = await _supabase
+                .from('test_results')
+                .select('*')
+                .eq('module', currentModule)
+                .order('created_at', { ascending: false });
+
+            if (error || !results || results.length === 0) {
+                historyList.innerHTML = `<p class="text-gray-400 italic text-center py-4">No completed tests yet for ${currentModule === 'ecrit' ? 'Écrite' : 'Orale'}.</p>`;
+                return;
+            }
+
+            historyList.innerHTML = '';
+            results.forEach(res => {
+                const dateStr = new Date(res.created_at).toLocaleDateString('fr-FR', { month: 'short', day: 'numeric' });
+                const clbInfo = getCLBLevel(res.score, res.module);
+
+                const card = document.createElement('div');
+                card.className = "flex justify-between items-center p-2.5 bg-gray-50 border border-gray-200 rounded-lg";
+                card.innerHTML = `
+                    <div>
+                        <p class="font-bold text-gray-800">Série ${res.series_number}</p>
+                        <p class="text-[10px] text-gray-500">${dateStr}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-extrabold text-blue-600">${res.score} pts</p>
+                        <span class="text-[10px] bg-purple-100 text-purple-800 font-bold px-1.5 py-0.5 rounded">
+                            CLB ${clbInfo.clb} (${clbInfo.cefr})
+                        </span>
+                    </div>
+                `;
+                historyList.appendChild(card);
+            });
+        }
         // =================================-------------------------
         // 2. FETCH JSON & MAP QUESTIONS (39 PER SERIES)
         // =================================-------------------------
@@ -302,6 +401,8 @@
                 btn.onclick = () => loadSeries(i);
                 grid.appendChild(btn);
             }
+            loadTestHistory(); // <-- Reload history on dashboard load
+
         }
 
         function loadSeries(seriesNum) {
@@ -436,11 +537,20 @@
             renderCurrentQuestion();
         }
 
+        // function finishSet() {
+        //     alert(`Practice Set Finished!\nWeighted Score: ${currentEarnedPoints} / ${currentTotalPossiblePoints} pts\nRaw Score: ${currentRawCorrect} / ${activeQuestions.length}`);
+        //     renderSeriesSelector();
+        // }
         function finishSet() {
-            alert(`Practice Set Finished!\nWeighted Score: ${currentEarnedPoints} / ${currentTotalPossiblePoints} pts\nRaw Score: ${currentRawCorrect} / ${activeQuestions.length}`);
+            const currentSeriesNum = activeQuestions[0] ? activeQuestions[0].series : 1;
+            const clbInfo = getCLBLevel(currentEarnedPoints, currentModule);
+
+            // Save to cloud
+            saveTestResult(currentSeriesNum, currentEarnedPoints);
+
+            alert(`Practice Set Finished!\n\nSérie: ${currentSeriesNum}\nScore: ${currentEarnedPoints} / ${currentTotalPossiblePoints} pts\nNCLC/CLB Level: ${clbInfo.clb} (${clbInfo.cefr})`);
             renderSeriesSelector();
         }
-
         // Initialize App
         loadJSONData('ecrit');
     </script>
