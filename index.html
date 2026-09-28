@@ -462,7 +462,7 @@
             const userAns = selectedOpt.value;
             const isCorrect = (userAns === q.answer);
 
-            saveAttemptToCloud(q.id, isCorrect, q.answer);
+            saveAttemptToCloud(q.id, isCorrect, q.options[q.answer]);
 
             ['A', 'B', 'C', 'D'].forEach(key => {
                 const label = document.getElementById(`opt-label-${key}`);
