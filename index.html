@@ -217,11 +217,12 @@
         // =================================-------------------------
         // 3. CLOUD SYNC FUNCTIONS (SUPABASE)
         // =================================-------------------------
-        async function saveAttemptToCloud(questionId, isCorrect) {
+        async function saveAttemptToCloud(questionId, isCorrect, correctAnswer) {
             await _supabase.from('attempts').insert([{
                 question_id: questionId,
                 module: currentModule,
-                is_correct: isCorrect
+                is_correct: isCorrect,
+                answer: correctAnswer
             }]);
         }
 
@@ -461,7 +462,7 @@
             const userAns = selectedOpt.value;
             const isCorrect = (userAns === q.answer);
 
-            saveAttemptToCloud(q.id, isCorrect);
+            saveAttemptToCloud(q.id, isCorrect, q.answer);
 
             ['A', 'B', 'C', 'D'].forEach(key => {
                 const label = document.getElementById(`opt-label-${key}`);
