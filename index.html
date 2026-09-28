@@ -215,37 +215,14 @@
         }
 
         // =================================-------------------------
-        // 3. CLOUD SYNC FUNCTIONS (SUPABASE - UNIQUE UPSERT)
+        // 3. CLOUD SYNC FUNCTIONS (SUPABASE)
         // =================================-------------------------
-        async function saveAttemptToCloud(questionId, isCorrect, submittedAnswer) {
-            // First check if a record already exists to aggregate attempts
-            const { data: existing } = await _supabase
-                .from('attempts')
-                .select('*')
-                .eq('question_id', questionId)
-                .eq('module', currentModule)
-                .maybeSingle();
-
-            const total = (existing?.total_attempts || 0) + 1;
-            const wrong = (existing?.wrong_attempts || 0) + (isCorrect ? 0 : 1);
-
-            // Upsert: updates if (question_id, module) exists, inserts if not
-            const { error } = await _supabase
-                .from('attempts')
-                .upsert({
-                    question_id: questionId,
-                    module: currentModule,
-                    is_correct: isCorrect,
-                    last_answer: submittedAnswer,
-                    total_attempts: total,
-                    wrong_attempts: wrong
-                }, { 
-                    onConflict: 'question_id,module' 
-                });
-
-            if (error) {
-                console.error("Error updating attempt:", error);
-            }
+        async function saveAttemptToCloud(questionId, isCorrect) {
+            await _supabase.from('attempts').insert([{
+                question_id: questionId,
+                module: currentModule,
+                is_correct: isCorrect
+            }]);
         }
 
         async function saveTestResult(seriesNum, score) {
@@ -303,7 +280,7 @@
         async function loadWeakSpots() {
             const { data: attempts, error } = await _supabase
                 .from('attempts')
-                .select('*')
+                .select('question_id, is_correct')
                 .eq('module', currentModule);
 
             if (error || !attempts || attempts.length === 0) {
@@ -311,18 +288,18 @@
                 return;
             }
 
-            // Identify questions where failure rate is >= 50% or the last attempt was incorrect
-            const weakQuestionIds = new Set(
-                attempts.filter(a => {
-                    if (a.total_attempts) {
-                        return (a.wrong_attempts / a.total_attempts) >= 0.5;
-                    }
-                    return !a.is_correct;
-                }).map(a => a.question_id)
-            );
+            const stats = {};
+            attempts.forEach(a => {
+                if (!stats[a.question_id]) stats[a.question_id] = { total: 0, wrong: 0 };
+                stats[a.question_id].total += 1;
+                if (!a.is_correct) stats[a.question_id].wrong += 1;
+            });
 
             const moduleQuestions = database[currentModule] || [];
-            const rawWeakSpots = moduleQuestions.filter(q => weakQuestionIds.has(q.id));
+            const rawWeakSpots = moduleQuestions.filter(q => {
+                const s = stats[q.id];
+                return s && s.total >= 1 && (s.wrong / s.total) >= 0.5;
+            });
 
             // Deduplicate by question text
             const seenTexts = new Set();
@@ -334,7 +311,7 @@
             });
 
             if (activeQuestions.length === 0) {
-                alert("No weak spots identified! All answered questions are performing well.");
+                alert("No weak spots identified! All answered questions have >50% accuracy.");
                 return;
             }
 
@@ -484,8 +461,7 @@
             const userAns = selectedOpt.value;
             const isCorrect = (userAns === q.answer);
 
-            // Saves/updates answer uniquely in cloud
-            await saveAttemptToCloud(q.id, isCorrect, userAns);
+            saveAttemptToCloud(q.id, isCorrect);
 
             ['A', 'B', 'C', 'D'].forEach(key => {
                 const label = document.getElementById(`opt-label-${key}`);
