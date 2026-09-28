@@ -218,12 +218,13 @@
         // 3. CLOUD SYNC FUNCTIONS (SUPABASE)
         // =================================-------------------------
         async function saveAttemptToCloud(questionId, isCorrect, correctAnswer) {
+            if(isCorrect == 'false'){
             await _supabase.from('attempts').insert([{
                 question_id: questionId,
                 module: currentModule,
                 is_correct: isCorrect,
                 answer: correctAnswer
-            }]);
+            }]);}
         }
 
         async function saveTestResult(seriesNum, score) {
