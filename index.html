@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <html lang="fr" class="dark">
+
 <head>
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <style>
-  html {
-    touch-action: manipulation;
-  }
-</style>
+        html {
+            touch-action: manipulation;
+        }
+    </style>
     <title>TCF Prep Hub</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -27,43 +28,52 @@
         }
     </script>
 </head>
+
 <body class="bg-slate-950 min-h-screen text-slate-100 p-4 lg:p-8 pb-12 transition-colors duration-200">
     <div class="max-w-md md:max-w-3xl lg:max-w-6xl mx-auto space-y-6">
-        
+
         <!-- App Header -->
         <header class="bg-slate-900 border border-slate-800 p-5 lg:p-6 rounded-2xl shadow-lg text-center">
-            <h1 class="text-xl md:text-2xl lg:text-3xl font-extrabold text-blue-400 tracking-tight">TEF / TCF Prep Hub</h1>
-            <p class="text-xs md:text-sm text-slate-400 mt-1 font-medium">Weighted TEF Scoring & Cloud Performance Tracking</p>
+            <h1 class="text-xl md:text-2xl lg:text-3xl font-extrabold text-blue-400 tracking-tight">TEF / TCF Prep Hub
+            </h1>
+            <p class="text-xs md:text-sm text-slate-400 mt-1 font-medium">Weighted TEF Scoring & Cloud Performance
+                Tracking</p>
         </header>
 
         <!-- Module & Mode Selection Controls -->
         <div class="bg-slate-900 border border-slate-800 p-5 lg:p-6 rounded-2xl shadow-lg space-y-4">
             <!-- Module Switcher -->
             <div class="flex bg-slate-950 p-1.5 rounded-xl border border-slate-800 max-w-xl mx-auto">
-                <button id="mod-ecrit" onclick="switchModule('ecrit')" class="flex-1 py-2 text-xs md:text-sm font-bold rounded-lg bg-blue-600 text-white shadow transition">
+                <button id="mod-ecrit" onclick="switchModule('ecrit')"
+                    class="flex-1 py-2 text-xs md:text-sm font-bold rounded-lg bg-blue-600 text-white shadow transition">
                     Compréhension Écrite
                 </button>
-                <button id="mod-orale" onclick="switchModule('orale')" class="flex-1 py-2 text-xs md:text-sm font-bold rounded-lg text-slate-400 hover:text-slate-100 transition">
+                <button id="mod-orale" onclick="switchModule('orale')"
+                    class="flex-1 py-2 text-xs md:text-sm font-bold rounded-lg text-slate-400 hover:text-slate-100 transition">
                     Compréhension Orale
                 </button>
             </div>
 
             <!-- Set Selectors -->
             <div class="grid grid-cols-2 gap-3 max-w-xl mx-auto">
-                <button onclick="renderSeriesSelector()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 py-2.5 rounded-xl text-xs md:text-sm font-semibold transition shadow-sm">
+                <button onclick="renderSeriesSelector()"
+                    class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 py-2.5 rounded-xl text-xs md:text-sm font-semibold transition shadow-sm">
                     Series Sets (1–40)
                 </button>
-                <button onclick="loadWeakSpots()" class="bg-red-600 hover:bg-red-500 text-white py-2.5 rounded-xl text-xs md:text-sm font-semibold transition shadow-sm">
+                <button onclick="loadWeakSpots()"
+                    class="bg-red-600 hover:bg-red-500 text-white py-2.5 rounded-xl text-xs md:text-sm font-semibold transition shadow-sm">
                     Weak Spots Set
                 </button>
             </div>
-            <button onclick="resetStats()" class="block w-full text-center text-xs text-slate-500 hover:text-red-400 underline pt-1 transition">
+            <button onclick="resetStats()"
+                class="block w-full text-center text-xs text-slate-500 hover:text-red-400 underline pt-1 transition">
                 Reset Cloud Performance History
             </button>
         </div>
 
         <!-- Series Grid Selector & History Dashboard Container -->
-        <div id="series-container" class="bg-slate-900 border border-slate-800 p-5 lg:p-6 rounded-2xl shadow-lg space-y-6">
+        <div id="series-container"
+            class="bg-slate-900 border border-slate-800 p-5 lg:p-6 rounded-2xl shadow-lg space-y-6">
             <!-- Top: Series Grid -->
             <div>
                 <h2 id="series-grid-title" class="text-base font-bold mb-3 text-slate-200">Select Series</h2>
@@ -74,7 +84,8 @@
             <div class="border-t pt-5 border-slate-800">
                 <h2 class="text-base font-bold mb-3 text-slate-200 flex justify-between items-center">
                     <span>Test History</span>
-                    <span id="history-module-badge" class="text-xs bg-blue-950 text-blue-300 border border-blue-800 px-2.5 py-0.5 rounded-full font-bold">Écrite</span>
+                    <span id="history-module-badge"
+                        class="text-xs bg-blue-950 text-blue-300 border border-blue-800 px-2.5 py-0.5 rounded-full font-bold">Écrite</span>
                 </h2>
                 <div id="history-list" class="space-y-2.5 max-h-96 overflow-y-auto pr-1 text-xs md:text-sm">
                     <p class="text-slate-500 italic text-center py-6">Loading history...</p>
@@ -85,33 +96,40 @@
         <!-- Active Question Card -->
         <div id="quiz-container" class="hidden max-w-2xl lg:max-w-3xl mx-auto space-y-4">
             <!-- Progress & Badge Header -->
-            <div class="flex justify-between items-center bg-slate-900 border border-slate-800 px-5 py-3 rounded-2xl shadow-lg text-xs md:text-sm font-semibold">
+            <div
+                class="flex justify-between items-center bg-slate-900 border border-slate-800 px-5 py-3 rounded-2xl shadow-lg text-xs md:text-sm font-semibold">
                 <span id="progress-text" class="text-slate-400">Question 1 / 39</span>
                 <span id="score-text" class="text-blue-400 font-bold">Points: 0 / 0</span>
             </div>
 
             <!-- Single Question Container -->
-            <div id="question-card" class="bg-slate-900 border border-slate-800 p-5 lg:p-8 rounded-2xl shadow-lg space-y-4">
-                <p id="q-info" class="text-xs md:text-sm bg-slate-950 border border-slate-800 p-3.5 rounded-xl italic text-slate-300 leading-relaxed"></p>
-                
+            <div id="question-card"
+                class="bg-slate-900 border border-slate-800 p-5 lg:p-8 rounded-2xl shadow-lg space-y-4">
+                <p id="q-info"
+                    class="text-xs md:text-sm bg-slate-950 border border-slate-800 p-3.5 rounded-xl italic text-slate-300 leading-relaxed">
+                </p>
+
                 <div id="audio-container" class="hidden">
                     <audio id="q-audio" controls class="w-full mt-2"></audio>
                 </div>
 
                 <div class="flex justify-between items-start gap-4">
                     <p id="q-text" class="font-semibold text-sm md:text-base text-slate-100 leading-snug"></p>
-                    <span id="q-points-badge" class="bg-blue-950 text-blue-300 border border-blue-800 text-xs font-bold px-2.5 py-1 rounded-full shrink-0"></span>
+                    <span id="q-points-badge"
+                        class="bg-blue-950 text-blue-300 border border-blue-800 text-xs font-bold px-2.5 py-1 rounded-full shrink-0"></span>
                 </div>
 
                 <div id="options-container" class="space-y-2.5 pt-2"></div>
 
                 <!-- Action Button -->
-                <button id="action-btn" onclick="submitAnswer()" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3.5 rounded-xl font-bold shadow-md text-sm md:text-base transition">
+                <button id="action-btn" onclick="submitAnswer()"
+                    class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3.5 rounded-xl font-bold shadow-md text-sm md:text-base transition">
                     Submit Answer
                 </button>
 
                 <!-- Feedback Banner (Under the Submit Button) -->
-                <div id="feedback-banner" class="hidden p-3.5 rounded-xl text-xs md:text-sm font-bold text-center"></div>
+                <div id="feedback-banner" class="hidden p-3.5 rounded-xl text-xs md:text-sm font-bold text-center">
+                </div>
             </div>
         </div>
 
@@ -126,7 +144,7 @@
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let database = { ecrit: [], orale: [] };
-        let currentModule = 'ecrit'; 
+        let currentModule = 'ecrit';
         let activeQuestions = [];
         let currentIndex = 0;
         let currentEarnedPoints = 0;
@@ -153,7 +171,7 @@
         // NCLC / CLB Mapping Logic
         function getCLBLevel(score, moduleType) {
             const isReading = (moduleType === 'ecrit');
-            
+
             if (isReading) {
                 if (score >= 549) return { clb: 10, cefr: "C1-C2" };
                 if (score >= 524) return { clb: 9, cefr: "C1" };
@@ -163,7 +181,7 @@
                 if (score >= 375) return { clb: 5, cefr: "B1" };
                 if (score >= 342) return { clb: 4, cefr: "A2" };
                 return { clb: "<4", cefr: "A1-A2" };
-            } else { 
+            } else {
                 if (score >= 549) return { clb: 10, cefr: "C1-C2" };
                 if (score >= 523) return { clb: 9, cefr: "C1" };
                 if (score >= 503) return { clb: 8, cefr: "B2" };
@@ -183,7 +201,7 @@
             try {
                 const response = await fetch(filePath);
                 if (!response.ok) throw new Error(`Could not load ${filePath}`);
-                
+
                 const data = await response.json();
                 const rawArray = data.questions || data;
 
@@ -218,18 +236,19 @@
         // 3. CLOUD SYNC FUNCTIONS (SUPABASE)
         // =================================-------------------------
         async function saveAttemptToCloud(questionId, isCorrect, correctAnswer) {
-            if(!isCorrect){
-            await _supabase.from('attempts').insert([{
-                question_id: questionId,
-                module: currentModule,
-                is_correct: isCorrect,
-                answer: correctAnswer
-            }]);}
+            if (!isCorrect) {
+                await _supabase.from('attempts').insert([{
+                    question_id: questionId,
+                    module: currentModule,
+                    is_correct: isCorrect,
+                    answer: correctAnswer
+                }]);
+            }
         }
 
         async function saveTestResult(seriesNum, score) {
             const { clb, cefr } = getCLBLevel(score, currentModule);
-            
+
             await _supabase.from('test_results').insert([{
                 module: currentModule,
                 series_number: seriesNum,
@@ -280,45 +299,73 @@
         }
 
         async function loadWeakSpots() {
+            // 1. Fetch all questions recorded as incorrect for the current module
             const { data: attempts, error } = await _supabase
                 .from('attempts')
-                .select('question_id, is_correct')
-                .eq('module', currentModule);
+                .select('question_id')
+                .eq('module', currentModule)
+                .eq('is_correct', false);
 
             if (error || !attempts || attempts.length === 0) {
-                alert("No performance history found in Supabase! Answer some questions first.");
+                alert("No weak spots identified! All answered questions are correct or no attempts have been recorded yet.");
                 return;
             }
 
-            const stats = {};
-            attempts.forEach(a => {
-                if (!stats[a.question_id]) stats[a.question_id] = { total: 0, wrong: 0 };
-                stats[a.question_id].total += 1;
-                if (!a.is_correct) stats[a.question_id].wrong += 1;
-            });
+            // 2. Collect all question IDs marked as incorrect
+            const wrongIds = new Set(attempts.map(a => a.question_id));
 
+            // 3. Match against all questions loaded in the current module database
             const moduleQuestions = database[currentModule] || [];
-            const rawWeakSpots = moduleQuestions.filter(q => {
-                const s = stats[q.id];
-                return s && s.total >= 1 && (s.wrong / s.total) >= 0.5;
-            });
-
-            // Deduplicate by question text
-            const seenTexts = new Set();
-            activeQuestions = rawWeakSpots.filter(q => {
-                const cleanText = q.question.trim().toLowerCase();
-                if (seenTexts.has(cleanText)) return false;
-                seenTexts.add(cleanText);
-                return true;
-            });
+            activeQuestions = moduleQuestions.filter(q => wrongIds.has(q.id));
 
             if (activeQuestions.length === 0) {
-                alert("No weak spots identified! All answered questions have >50% accuracy.");
+                alert("No matching questions found for the identified weak spots.");
                 return;
             }
 
+            // 4. Start practice with all incorrect questions
             startQuiz();
         }
+        // async function loadWeakSpots() {
+        //     const { data: attempts, error } = await _supabase
+        //         .from('attempts')
+        //         .select('question_id, is_correct')
+        //         .eq('module', currentModule);
+
+        //     if (error || !attempts || attempts.length === 0) {
+        //         alert("No performance history found in Supabase! Answer some questions first.");
+        //         return;
+        //     }
+
+        //     const stats = {};
+        //     attempts.forEach(a => {
+        //         if (!stats[a.question_id]) stats[a.question_id] = { total: 0, wrong: 0 };
+        //         stats[a.question_id].total += 1;
+        //         if (!a.is_correct) stats[a.question_id].wrong += 1;
+        //     });
+
+        //     const moduleQuestions = database[currentModule] || [];
+        //     const rawWeakSpots = moduleQuestions.filter(q => {
+        //         const s = stats[q.id];
+        //         return s && s.total >= 1 && (s.wrong / s.total) >= 0.5;
+        //     });
+
+        //     // Deduplicate by question text
+        //     const seenTexts = new Set();
+        //     activeQuestions = rawWeakSpots.filter(q => {
+        //         const cleanText = q.question.trim().toLowerCase();
+        //         if (seenTexts.has(cleanText)) return false;
+        //         seenTexts.add(cleanText);
+        //         return true;
+        //     });
+
+        //     if (activeQuestions.length === 0) {
+        //         alert("No weak spots identified! All answered questions have >50% accuracy.");
+        //         return;
+        //     }
+
+        //     startQuiz();
+        // }
 
         async function resetStats() {
             if (confirm("Are you sure you want to clear your entire cloud performance history?")) {
@@ -334,7 +381,7 @@
         // =================================-------------------------
         function switchModule(moduleType) {
             currentModule = moduleType;
-            
+
             const btnEcrit = document.getElementById('mod-ecrit');
             const btnOrale = document.getElementById('mod-orale');
 
@@ -364,8 +411,8 @@
             grid.innerHTML = '';
 
             const moduleQuestions = database[currentModule] || [];
-            const totalSeries = moduleQuestions.length > 0 
-                ? Math.max(...moduleQuestions.map(q => q.series)) 
+            const totalSeries = moduleQuestions.length > 0
+                ? Math.max(...moduleQuestions.map(q => q.series))
                 : 40;
 
             for (let i = 1; i <= totalSeries; i++) {
@@ -446,7 +493,7 @@
 
             const feedback = document.getElementById('feedback-banner');
             feedback.className = "hidden p-3.5 rounded-xl text-xs md:text-sm font-bold text-center";
-            
+
             const btn = document.getElementById('action-btn');
             btn.innerText = "Submit Answer";
             btn.onclick = submitAnswer;
@@ -468,7 +515,7 @@
             ['A', 'B', 'C', 'D'].forEach(key => {
                 const label = document.getElementById(`opt-label-${key}`);
                 if (!label) return;
-                
+
                 const radio = label.querySelector('input');
                 radio.disabled = true;
 
@@ -511,7 +558,7 @@
         function finishSet() {
             const currentSeriesNum = activeQuestions[0] ? activeQuestions[0].series : 1;
             const clbInfo = getCLBLevel(currentEarnedPoints, currentModule);
-            
+
             saveTestResult(currentSeriesNum, currentEarnedPoints);
 
             alert(`Practice Set Finished!\n\nSérie: ${currentSeriesNum}\nScore: ${currentEarnedPoints} / ${currentTotalPossiblePoints} pts\nNCLC / CLB Level: ${clbInfo.clb} (${clbInfo.cefr})`);
@@ -522,4 +569,5 @@
         loadJSONData('ecrit');
     </script>
 </body>
+
 </html>
