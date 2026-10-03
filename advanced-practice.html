@@ -6,7 +6,7 @@
     <style>
         html { touch-action: manipulation; }
     </style>
-    <title>TCF High-Level Practice (Q20–39)</title>
+    <title>TCF Custom Range Practice</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -29,16 +29,16 @@
         <!-- Header -->
         <header class="bg-slate-900 border border-slate-800 p-5 lg:p-6 rounded-2xl shadow-lg flex flex-col md:flex-row items-center justify-between gap-4">
             <div>
-                <h1 class="text-xl md:text-2xl lg:text-3xl font-extrabold text-blue-400 tracking-tight">Advanced Practice Drill</h1>
-                <p class="text-xs md:text-sm text-slate-400 mt-1 font-medium">Practice Only: Questions 20 to 39 (Levels B1 to C2)</p>
+                <h1 class="text-xl md:text-2xl lg:text-3xl font-extrabold text-blue-400 tracking-tight">Custom Range Drill</h1>
+                <p class="text-xs md:text-sm text-slate-400 mt-1 font-medium">Practice specific subsets (e.g. 36–39, 30–35, or custom)</p>
             </div>
             <a href="index.html" class="text-xs font-semibold px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl transition">
                 ← Back to Main Hub
             </a>
         </header>
 
-        <!-- Module & Range Navigation -->
-        <div class="bg-slate-900 border border-slate-800 p-5 lg:p-6 rounded-2xl shadow-lg space-y-4">
+        <!-- Module & Range Controls -->
+        <div class="bg-slate-900 border border-slate-800 p-5 lg:p-6 rounded-2xl shadow-lg space-y-5">
             <!-- Module Switcher -->
             <div class="flex bg-slate-950 p-1.5 rounded-xl border border-slate-800 max-w-xl mx-auto">
                 <button id="mod-ecrit" onclick="switchModule('ecrit')" class="flex-1 py-2 text-xs md:text-sm font-bold rounded-lg bg-blue-600 text-white shadow transition">
@@ -49,13 +49,49 @@
                 </button>
             </div>
 
+            <!-- Custom Question Range Selectors -->
+            <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 max-w-xl mx-auto space-y-3">
+                <div class="flex items-center justify-between text-xs md:text-sm font-semibold text-slate-300">
+                    <span>Question Range (Within each set):</span>
+                    <span id="range-summary" class="text-blue-400 font-bold">Questions 36 to 39</span>
+                </div>
+
+                <!-- Inputs -->
+                <div class="flex items-center gap-3">
+                    <div class="flex-1 flex items-center bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5">
+                        <span class="text-xs text-slate-400 mr-2">From:</span>
+                        <input id="range-from" type="number" min="1" max="39" value="36" onchange="applyRangeChange()" class="w-full bg-transparent text-sm text-slate-100 focus:outline-none font-bold">
+                    </div>
+                    <div class="flex-1 flex items-center bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5">
+                        <span class="text-xs text-slate-400 mr-2">To:</span>
+                        <input id="range-to" type="number" min="1" max="39" value="39" onchange="applyRangeChange()" class="w-full bg-transparent text-sm text-slate-100 focus:outline-none font-bold">
+                    </div>
+                </div>
+
+                <!-- Quick Presets -->
+                <div class="grid grid-cols-4 gap-2 pt-1 text-xs">
+                    <button onclick="setPreset(36, 39)" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 py-1.5 rounded-lg font-medium transition">
+                        Last 4 (36–39)
+                    </button>
+                    <button onclick="setPreset(30, 35)" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 py-1.5 rounded-lg font-medium transition">
+                        30–35
+                    </button>
+                    <button onclick="setPreset(20, 39)" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 py-1.5 rounded-lg font-medium transition">
+                        20–39
+                    </button>
+                    <button onclick="setPreset(1, 39)" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 py-1.5 rounded-lg font-medium transition">
+                        Full (1–39)
+                    </button>
+                </div>
+            </div>
+
             <!-- Series Selection / All Pool Mode -->
             <div class="grid grid-cols-2 gap-3 max-w-xl mx-auto">
                 <button onclick="renderSeriesSelector()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 py-2.5 rounded-xl text-xs md:text-sm font-semibold transition shadow-sm">
-                    Select Series (Q20–39)
+                    Select Single Series
                 </button>
-                <button onclick="loadAllAdvancedQuestions()" class="bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-xs md:text-sm font-semibold transition shadow-sm">
-                    Master Pool (All 20–39)
+                <button onclick="loadAllFilteredQuestions()" class="bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-xs md:text-sm font-semibold transition shadow-sm">
+                    Pool All 40 Series
                 </button>
             </div>
         </div>
@@ -63,7 +99,7 @@
         <!-- Series Grid Container -->
         <div id="series-container" class="bg-slate-900 border border-slate-800 p-5 lg:p-6 rounded-2xl shadow-lg space-y-6">
             <div>
-                <h2 id="series-grid-title" class="text-base font-bold mb-3 text-slate-200">Select Series (Questions 20–39)</h2>
+                <h2 id="series-grid-title" class="text-base font-bold mb-3 text-slate-200">Select Series</h2>
                 <div id="series-grid" class="grid grid-cols-5 lg:grid-cols-8 gap-2.5"></div>
             </div>
         </div>
@@ -71,7 +107,7 @@
         <!-- Quiz Container -->
         <div id="quiz-container" class="hidden max-w-2xl lg:max-w-3xl mx-auto space-y-4">
             <div class="flex justify-between items-center bg-slate-900 border border-slate-800 px-5 py-3 rounded-2xl shadow-lg text-xs md:text-sm font-semibold">
-                <span id="progress-text" class="text-slate-400">Question 1 / 20</span>
+                <span id="progress-text" class="text-slate-400">Question 1 / 4</span>
                 <span id="score-text" class="text-blue-400 font-bold">Points: 0 / 0</span>
             </div>
 
@@ -100,12 +136,15 @@
     </div>
 
     <script>
-        let database = { ecrit: [], orale: [] };
+        let rawDatabase = { ecrit: [], orale: [] };
         let currentModule = 'ecrit'; 
         let activeQuestions = [];
         let currentIndex = 0;
         let currentEarnedPoints = 0;
         let currentTotalPossiblePoints = 0;
+
+        let rangeStart = 36;
+        let rangeEnd = 39;
 
         const JSON_PATHS = {
             ecrit: './questions.json',
@@ -114,6 +153,9 @@
 
         function getQuestionPoints(qNumber) {
             const num = parseInt(qNumber, 10);
+            if (num >= 1 && num <= 4) return 3;
+            if (num >= 5 && num <= 10) return 9;
+            if (num >= 11 && num <= 19) return 15;
             if (num >= 20 && num <= 29) return 21;
             if (num >= 30 && num <= 35) return 26;
             if (num >= 36 && num <= 39) return 33;
@@ -129,24 +171,21 @@
                 const data = await response.json();
                 const rawArray = data.questions || data;
 
-                // Filter specifically for Q20 through Q39
-                database[moduleType] = rawArray
-                    .map((q, index) => {
-                        const seriesIndex = Math.floor(index / 39) + 1;
-                        const posInSeries = (index % 39) + 1;
-                        return {
-                            id: `${moduleType.charAt(0).toUpperCase()}_${q.number || (index + 1)}`,
-                            series: seriesIndex,
-                            posInSeries: posInSeries,
-                            points: getQuestionPoints(posInSeries),
-                            info: q.info || "",
-                            audio: q.audio || null,
-                            question: q.question,
-                            options: q.options,
-                            answer: q.answer
-                        };
-                    })
-                    .filter(q => q.posInSeries >= 20 && q.posInSeries <= 39);
+                rawDatabase[moduleType] = rawArray.map((q, index) => {
+                    const seriesIndex = Math.floor(index / 39) + 1;
+                    const posInSeries = (index % 39) + 1;
+                    return {
+                        id: `${moduleType.charAt(0).toUpperCase()}_${q.number || (index + 1)}`,
+                        series: seriesIndex,
+                        posInSeries: posInSeries,
+                        points: getQuestionPoints(posInSeries),
+                        info: q.info || "",
+                        audio: q.audio || null,
+                        question: q.question,
+                        options: q.options,
+                        answer: q.answer
+                    };
+                });
 
                 renderSeriesSelector();
             } catch (error) {
@@ -157,6 +196,34 @@
                     </div>
                 `;
             }
+        }
+
+        function setPreset(from, to) {
+            document.getElementById('range-from').value = from;
+            document.getElementById('range-to').value = to;
+            applyRangeChange();
+        }
+
+        function applyRangeChange() {
+            let from = parseInt(document.getElementById('range-from').value, 10) || 1;
+            let to = parseInt(document.getElementById('range-to').value, 10) || 39;
+
+            from = Math.max(1, Math.min(39, from));
+            to = Math.max(1, Math.min(39, to));
+
+            if (from > to) {
+                const temp = from;
+                from = to;
+                to = temp;
+                document.getElementById('range-from').value = from;
+                document.getElementById('range-to').value = to;
+            }
+
+            rangeStart = from;
+            rangeEnd = to;
+
+            document.getElementById('range-summary').innerText = `Questions ${rangeStart} to ${rangeEnd}`;
+            renderSeriesSelector();
         }
 
         function switchModule(moduleType) {
@@ -173,7 +240,7 @@
                 btnEcrit.className = "flex-1 py-2 text-xs md:text-sm font-bold rounded-lg text-slate-400 hover:text-slate-100 transition";
             }
 
-            if (database[currentModule].length === 0) {
+            if (rawDatabase[currentModule].length === 0) {
                 loadJSONData(currentModule);
             } else {
                 renderSeriesSelector();
@@ -185,7 +252,7 @@
             document.getElementById('series-container').classList.remove('hidden');
 
             const title = document.getElementById('series-grid-title');
-            title.innerText = `Select ${currentModule === 'ecrit' ? 'Compréhension Écrite' : 'Compréhension Orale'} Series (Q20–39)`;
+            title.innerText = `Select Series (Practicing Q${rangeStart}–Q${rangeEnd})`;
 
             const grid = document.getElementById('series-grid');
             grid.innerHTML = '';
@@ -200,24 +267,33 @@
         }
 
         function loadSeries(seriesNum) {
-            const moduleQuestions = database[currentModule] || [];
-            activeQuestions = moduleQuestions.filter(q => q.series === seriesNum);
+            const allItems = rawDatabase[currentModule] || [];
+            activeQuestions = allItems.filter(q => 
+                q.series === seriesNum && 
+                q.posInSeries >= rangeStart && 
+                q.posInSeries <= rangeEnd
+            );
 
             if (activeQuestions.length === 0) {
-                alert(`No questions found for Series ${seriesNum}.`);
+                alert(`No questions found in Series ${seriesNum} for range ${rangeStart}–${rangeEnd}.`);
                 return;
             }
 
             startQuiz();
         }
 
-        function loadAllAdvancedQuestions() {
-            const moduleQuestions = database[currentModule] || [];
-            if (moduleQuestions.length === 0) {
-                alert("Questions are still loading...");
+        function loadAllFilteredQuestions() {
+            const allItems = rawDatabase[currentModule] || [];
+            activeQuestions = allItems.filter(q => 
+                q.posInSeries >= rangeStart && 
+                q.posInSeries <= rangeEnd
+            );
+
+            if (activeQuestions.length === 0) {
+                alert(`No questions found for range ${rangeStart}–${rangeEnd}.`);
                 return;
             }
-            activeQuestions = [...moduleQuestions];
+
             startQuiz();
         }
 
