@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <style>
+        html { touch-action: manipulation; }
+    </style>
+    <title>TCF High-Level Practice (Q20–39)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0f172a',
+                        darkCard: '#1e293b',
+                        darkBorder: '#334155'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-950 min-h-screen text-slate-100 p-4 lg:p-8 pb-12 transition-colors duration-200">
+    <div class="max-w-md md:max-w-3xl lg:max-w-6xl mx-auto space-y-6">
+        
+        <!-- Header -->
+        <header class="bg-slate-900 border border-slate-800 p-5 lg:p-6 rounded-2xl shadow-lg flex flex-col md:flex-row items-center justify-between gap-4">
+            <div>
+                <h1 class="text-xl md:text-2xl lg:text-3xl font-extrabold text-blue-400 tracking-tight">Advanced Practice Drill</h1>
+                <p class="text-xs md:text-sm text-slate-400 mt-1 font-medium">Practice Only: Questions 20 to 39 (Levels B1 to C2)</p>
+            </div>
+            <a href="index.html" class="text-xs font-semibold px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl transition">
+                ← Back to Main Hub
+            </a>
+        </header>
+
+        <!-- Module & Range Navigation -->
+        <div class="bg-slate-900 border border-slate-800 p-5 lg:p-6 rounded-2xl shadow-lg space-y-4">
+            <!-- Module Switcher -->
+            <div class="flex bg-slate-950 p-1.5 rounded-xl border border-slate-800 max-w-xl mx-auto">
+                <button id="mod-ecrit" onclick="switchModule('ecrit')" class="flex-1 py-2 text-xs md:text-sm font-bold rounded-lg bg-blue-600 text-white shadow transition">
+                    Compréhension Écrite
+                </button>
+                <button id="mod-orale" onclick="switchModule('orale')" class="flex-1 py-2 text-xs md:text-sm font-bold rounded-lg text-slate-400 hover:text-slate-100 transition">
+                    Compréhension Orale
+                </button>
+            </div>
+
+            <!-- Series Selection / All Pool Mode -->
+            <div class="grid grid-cols-2 gap-3 max-w-xl mx-auto">
+                <button onclick="renderSeriesSelector()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 py-2.5 rounded-xl text-xs md:text-sm font-semibold transition shadow-sm">
+                    Select Series (Q20–39)
+                </button>
+                <button onclick="loadAllAdvancedQuestions()" class="bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-xs md:text-sm font-semibold transition shadow-sm">
+                    Master Pool (All 20–39)
+                </button>
+            </div>
+        </div>
+
+        <!-- Series Grid Container -->
+        <div id="series-container" class="bg-slate-900 border border-slate-800 p-5 lg:p-6 rounded-2xl shadow-lg space-y-6">
+            <div>
+                <h2 id="series-grid-title" class="text-base font-bold mb-3 text-slate-200">Select Series (Questions 20–39)</h2>
+                <div id="series-grid" class="grid grid-cols-5 lg:grid-cols-8 gap-2.5"></div>
+            </div>
+        </div>
+
+        <!-- Quiz Container -->
+        <div id="quiz-container" class="hidden max-w-2xl lg:max-w-3xl mx-auto space-y-4">
+            <div class="flex justify-between items-center bg-slate-900 border border-slate-800 px-5 py-3 rounded-2xl shadow-lg text-xs md:text-sm font-semibold">
+                <span id="progress-text" class="text-slate-400">Question 1 / 20</span>
+                <span id="score-text" class="text-blue-400 font-bold">Points: 0 / 0</span>
+            </div>
+
+            <div id="question-card" class="bg-slate-900 border border-slate-800 p-5 lg:p-8 rounded-2xl shadow-lg space-y-4">
+                <p id="q-info" class="text-xs md:text-sm bg-slate-950 border border-slate-800 p-3.5 rounded-xl italic text-slate-300 leading-relaxed"></p>
+                
+                <div id="audio-container" class="hidden">
+                    <audio id="q-audio" controls class="w-full mt-2"></audio>
+                </div>
+
+                <div class="flex justify-between items-start gap-4">
+                    <p id="q-text" class="font-semibold text-sm md:text-base text-slate-100 leading-snug"></p>
+                    <span id="q-points-badge" class="bg-blue-950 text-blue-300 border border-blue-800 text-xs font-bold px-2.5 py-1 rounded-full shrink-0"></span>
+                </div>
+
+                <div id="options-container" class="space-y-2.5 pt-2"></div>
+
+                <button id="action-btn" onclick="submitAnswer()" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3.5 rounded-xl font-bold shadow-md text-sm md:text-base transition">
+                    Submit Answer
+                </button>
+
+                <div id="feedback-banner" class="hidden p-3.5 rounded-xl text-xs md:text-sm font-bold text-center"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let database = { ecrit: [], orale: [] };
+        let currentModule = 'ecrit'; 
+        let activeQuestions = [];
+        let currentIndex = 0;
+        let currentEarnedPoints = 0;
+        let currentTotalPossiblePoints = 0;
+
+        const JSON_PATHS = {
+            ecrit: './questions.json',
+            orale: './listening.json'
+        };
+
+        function getQuestionPoints(qNumber) {
+            const num = parseInt(qNumber, 10);
+            if (num >= 20 && num <= 29) return 21;
+            if (num >= 30 && num <= 35) return 26;
+            if (num >= 36 && num <= 39) return 33;
+            return 15;
+        }
+
+        async function loadJSONData(moduleType) {
+            const filePath = JSON_PATHS[moduleType];
+            try {
+                const response = await fetch(filePath);
+                if (!response.ok) throw new Error(`Could not load ${filePath}`);
+                
+                const data = await response.json();
+                const rawArray = data.questions || data;
+
+                // Filter specifically for Q20 through Q39
+                database[moduleType] = rawArray
+                    .map((q, index) => {
+                        const seriesIndex = Math.floor(index / 39) + 1;
+                        const posInSeries = (index % 39) + 1;
+                        return {
+                            id: `${moduleType.charAt(0).toUpperCase()}_${q.number || (index + 1)}`,
+                            series: seriesIndex,
+                            posInSeries: posInSeries,
+                            points: getQuestionPoints(posInSeries),
+                            info: q.info || "",
+                            audio: q.audio || null,
+                            question: q.question,
+                            options: q.options,
+                            answer: q.answer
+                        };
+                    })
+                    .filter(q => q.posInSeries >= 20 && q.posInSeries <= 39);
+
+                renderSeriesSelector();
+            } catch (error) {
+                console.error("Error loading JSON:", error);
+                document.getElementById('series-grid').innerHTML = `
+                    <div class="col-span-5 text-red-400 text-xs text-center p-4">
+                        <b>File Load Error:</b><br>${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        function switchModule(moduleType) {
+            currentModule = moduleType;
+            
+            const btnEcrit = document.getElementById('mod-ecrit');
+            const btnOrale = document.getElementById('mod-orale');
+
+            if (moduleType === 'ecrit') {
+                btnEcrit.className = "flex-1 py-2 text-xs md:text-sm font-bold rounded-lg bg-blue-600 text-white shadow transition";
+                btnOrale.className = "flex-1 py-2 text-xs md:text-sm font-bold rounded-lg text-slate-400 hover:text-slate-100 transition";
+            } else {
+                btnOrale.className = "flex-1 py-2 text-xs md:text-sm font-bold rounded-lg bg-blue-600 text-white shadow transition";
+                btnEcrit.className = "flex-1 py-2 text-xs md:text-sm font-bold rounded-lg text-slate-400 hover:text-slate-100 transition";
+            }
+
+            if (database[currentModule].length === 0) {
+                loadJSONData(currentModule);
+            } else {
+                renderSeriesSelector();
+            }
+        }
+
+        function renderSeriesSelector() {
+            document.getElementById('quiz-container').classList.add('hidden');
+            document.getElementById('series-container').classList.remove('hidden');
+
+            const title = document.getElementById('series-grid-title');
+            title.innerText = `Select ${currentModule === 'ecrit' ? 'Compréhension Écrite' : 'Compréhension Orale'} Series (Q20–39)`;
+
+            const grid = document.getElementById('series-grid');
+            grid.innerHTML = '';
+
+            for (let i = 1; i <= 40; i++) {
+                const btn = document.createElement('button');
+                btn.className = "bg-slate-800/80 text-blue-400 hover:text-white font-bold p-3 md:p-4 rounded-xl text-center hover:bg-blue-600 border border-slate-700/80 hover:border-blue-500 transition text-sm md:text-base shadow-sm";
+                btn.innerText = i;
+                btn.onclick = () => loadSeries(i);
+                grid.appendChild(btn);
+            }
+        }
+
+        function loadSeries(seriesNum) {
+            const moduleQuestions = database[currentModule] || [];
+            activeQuestions = moduleQuestions.filter(q => q.series === seriesNum);
+
+            if (activeQuestions.length === 0) {
+                alert(`No questions found for Series ${seriesNum}.`);
+                return;
+            }
+
+            startQuiz();
+        }
+
+        function loadAllAdvancedQuestions() {
+            const moduleQuestions = database[currentModule] || [];
+            if (moduleQuestions.length === 0) {
+                alert("Questions are still loading...");
+                return;
+            }
+            activeQuestions = [...moduleQuestions];
+            startQuiz();
+        }
+
+        function startQuiz() {
+            currentIndex = 0;
+            currentEarnedPoints = 0;
+            currentTotalPossiblePoints = activeQuestions.reduce((sum, q) => sum + q.points, 0);
+
+            document.getElementById('series-container').classList.add('hidden');
+            document.getElementById('quiz-container').classList.remove('hidden');
+            renderCurrentQuestion();
+        }
+
+        function renderCurrentQuestion() {
+            const q = activeQuestions[currentIndex];
+
+            document.getElementById('progress-text').innerText = `Question ${currentIndex + 1} / ${activeQuestions.length} (Series ${q.series} - #${q.posInSeries})`;
+            document.getElementById('score-text').innerText = `Points: ${currentEarnedPoints} / ${currentTotalPossiblePoints} pts`;
+
+            const infoElem = document.getElementById('q-info');
+            if (q.info) {
+                infoElem.innerText = q.info;
+                infoElem.classList.remove('hidden');
+            } else {
+                infoElem.classList.add('hidden');
+            }
+
+            const audioContainer = document.getElementById('audio-container');
+            const audioElem = document.getElementById('q-audio');
+            if (q.audio) {
+                audioElem.src = q.audio;
+                audioContainer.classList.remove('hidden');
+            } else {
+                audioContainer.classList.add('hidden');
+            }
+
+            document.getElementById('q-text').innerText = q.question;
+            document.getElementById('q-points-badge').innerText = `+${q.points} pt`;
+
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+
+            ['A', 'B', 'C', 'D'].forEach(optKey => {
+                if (q.options && q.options[optKey]) {
+                    const label = document.createElement('label');
+                    label.id = `opt-label-${optKey}`;
+                    label.className = "flex items-center space-x-3 text-xs md:text-sm p-3.5 rounded-xl border border-slate-700 bg-slate-950/70 hover:bg-slate-800 text-slate-200 cursor-pointer transition";
+                    label.innerHTML = `
+                        <input type="radio" name="option" value="${optKey}" class="text-blue-500 bg-slate-900 border-slate-700 focus:ring-0">
+                        <span id="opt-text-${optKey}"><b>${optKey}:</b> ${q.options[optKey]}</span>
+                    `;
+                    optionsContainer.appendChild(label);
+                }
+            });
+
+            const feedback = document.getElementById('feedback-banner');
+            feedback.className = "hidden p-3.5 rounded-xl text-xs md:text-sm font-bold text-center";
+            
+            const btn = document.getElementById('action-btn');
+            btn.innerText = "Submit Answer";
+            btn.onclick = submitAnswer;
+        }
+
+        function submitAnswer() {
+            const selectedOpt = document.querySelector('input[name="option"]:checked');
+            if (!selectedOpt) {
+                alert("Please select an answer first!");
+                return;
+            }
+
+            const q = activeQuestions[currentIndex];
+            const userAns = selectedOpt.value;
+            const isCorrect = (userAns === q.answer);
+
+            ['A', 'B', 'C', 'D'].forEach(key => {
+                const label = document.getElementById(`opt-label-${key}`);
+                if (!label) return;
+                
+                const radio = label.querySelector('input');
+                radio.disabled = true;
+
+                if (key === q.answer) {
+                    label.className = "flex items-center space-x-3 text-xs md:text-sm p-3.5 rounded-xl border-2 border-emerald-500 bg-emerald-950/60 text-emerald-200 font-semibold shadow";
+                } else if (key === userAns && !isCorrect) {
+                    label.className = "flex items-center space-x-3 text-xs md:text-sm p-3.5 rounded-xl border-2 border-rose-500 bg-rose-950/60 text-rose-200 font-semibold shadow";
+                }
+            });
+
+            const feedback = document.getElementById('feedback-banner');
+            feedback.classList.remove('hidden');
+            if (isCorrect) {
+                currentEarnedPoints += q.points;
+                feedback.className = "p-3.5 rounded-xl text-xs md:text-sm font-bold text-center bg-emerald-950/80 text-emerald-300 border border-emerald-700 shadow-md";
+                feedback.innerText = `Excellente réponse ! (+${q.points} pts)`;
+            } else {
+                feedback.className = "p-3.5 rounded-xl text-xs md:text-sm font-bold text-center bg-rose-950/80 text-rose-300 border border-rose-700 shadow-md";
+                feedback.innerText = `Mauvaise réponse. La bonne réponse est l'option ${q.answer}.`;
+            }
+
+            document.getElementById('score-text').innerText = `Points: ${currentEarnedPoints} / ${currentTotalPossiblePoints} pts`;
+
+            const btn = document.getElementById('action-btn');
+            if (currentIndex < activeQuestions.length - 1) {
+                btn.innerText = "Next Question →";
+                btn.onclick = goToNextQuestion;
+            } else {
+                btn.innerText = "Finish Practice Set";
+                btn.onclick = finishSet;
+            }
+        }
+
+        function goToNextQuestion() {
+            currentIndex++;
+            renderCurrentQuestion();
+        }
+
+        function finishSet() {
+            alert(`Practice Finished!\n\nScore: ${currentEarnedPoints} / ${currentTotalPossiblePoints} pts`);
+            renderSeriesSelector();
+        }
+
+        // Initialize with Compréhension Écrite
+        loadJSONData('ecrit');
+    </script>
+</body>
+</html>
